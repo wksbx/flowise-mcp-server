@@ -17,7 +17,7 @@
     "docker:run": "docker run -i --rm --add-host=host.docker.internal:host-gateway --env-file .env flowise-mcp-server"
   },
   "keywords": ["mcp", "flowise", "ai", "chatflow", "model-context-protocol", "llm"],
-  "author": "YOUR_NAME",
+  "author": "wksbx",
   "license": "MIT",
   "repository": {
     "type": "git",
