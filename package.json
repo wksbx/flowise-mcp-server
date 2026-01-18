@@ -1,29 +1,32 @@
 {
-  "name": "flowise-mcp",
+  "name": "flowise-mcp-server",
   "version": "1.0.0",
   "description": "MCP server for Flowise AI workflows",
   "main": "dist/index.js",
   "bin": {
-    "flowise-mcp": "dist/index.js"
+    "flowise-mcp-server": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsc && node dist/index.js",
-    "docker:build": "docker build -t flowise-mcp .",
-    "docker:run": "docker run -i --rm --add-host=host.docker.internal:host-gateway --env-file .env flowise-mcp"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "docker:build": "docker build -t flowise-mcp-server .",
+    "docker:run": "docker run -i --rm --add-host=host.docker.internal:host-gateway --env-file .env flowise-mcp-server"
   },
   "keywords": ["mcp", "flowise", "ai", "chatflow", "model-context-protocol", "llm"],
   "author": "YOUR_NAME",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR_USERNAME/flowise-mcp.git"
+    "url": "git+https://github.com/wksbx/flowise-mcp-server.git"
   },
   "bugs": {
-    "url": "https://github.com/YOUR_USERNAME/flowise-mcp/issues"
+    "url": "https://github.com/wksbx/flowise-mcp-server/issues"
   },
-  "homepage": "https://github.com/YOUR_USERNAME/flowise-mcp#readme",
+  "homepage": "https://github.com/wksbx/flowise-mcp-server#readme",
   "packageManager": "pnpm@10.16.1",
   "type": "module",
   "dependencies": {
@@ -33,6 +36,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.9",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0"
   }
 }

@@ -4,46 +4,36 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { createRequire } from "module";
+import { createFlowiseApiClient, getDefaultConfig } from "./flowise-api.js";
+import {
+  handleCreatePrediction,
+  handleCreatePredictionWithHistory,
+  handleCreatePredictionWithFiles,
+  handleCreatePredictionWithLead,
+  handleListChatflows,
+  handleGetChatflow,
+  handleCreateChatflow,
+  handleUpdateChatflow,
+  handleDeleteChatflow,
+  handleListNodes,
+  handleGetNodesByCategory,
+  handleGetNode,
+} from "./handlers.js";
+
 const require = createRequire(import.meta.url);
 const { FlowiseClient } = require("flowise-sdk");
 
 // Get configuration from environment variables
-const FLOWISE_BASE_URL = process.env.FLOWISE_BASE_URL || "http://localhost:3000";
-const FLOWISE_API_KEY = process.env.FLOWISE_API_KEY || "";
+const config = getDefaultConfig();
 
-// Initialize Flowise client
+// Initialize Flowise SDK client
 const flowiseClient = new FlowiseClient({
-  baseUrl: FLOWISE_BASE_URL,
-  apiKey: FLOWISE_API_KEY,
+  baseUrl: config.baseUrl,
+  apiKey: config.apiKey,
 });
 
-// Helper function for direct Flowise API calls
-async function flowiseApi(
-  method: "GET" | "POST" | "PUT" | "DELETE",
-  endpoint: string,
-  body?: unknown
-): Promise<unknown> {
-  const url = `${FLOWISE_BASE_URL}/api/v1${endpoint}`;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (FLOWISE_API_KEY) {
-    headers["Authorization"] = `Bearer ${FLOWISE_API_KEY}`;
-  }
-
-  const response = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Flowise API error (${response.status}): ${errorText}`);
-  }
-
-  return response.json();
-}
+// Initialize Flowise API client for direct API calls
+const flowiseApi = createFlowiseApiClient(config);
 
 // Create MCP server
 const server = new McpServer({
@@ -64,37 +54,7 @@ server.tool(
       .optional()
       .describe("Optional configuration overrides for the chatflow"),
   },
-  async ({ chatflowId, question, chatId, overrideConfig }, _extra) => {
-    try {
-      const response = await flowiseClient.createPrediction({
-        chatflowId,
-        question,
-        chatId,
-        overrideConfig,
-        streaming: false,
-      });
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error running chatflow: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
+  async (params) => handleCreatePrediction(flowiseClient, params)
 );
 
 // Tool: Create Prediction with History
@@ -118,38 +78,7 @@ server.tool(
       .optional()
       .describe("Optional configuration overrides for the chatflow"),
   },
-  async ({ chatflowId, question, history, chatId, overrideConfig }, _extra) => {
-    try {
-      const response = await flowiseClient.createPrediction({
-        chatflowId,
-        question,
-        history,
-        chatId,
-        overrideConfig,
-        streaming: false,
-      });
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error running chatflow: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
+  async (params) => handleCreatePredictionWithHistory(flowiseClient, params)
 );
 
 // Tool: Create Prediction with File Upload
@@ -175,38 +104,7 @@ server.tool(
       .optional()
       .describe("Optional configuration overrides for the chatflow"),
   },
-  async ({ chatflowId, question, uploads, chatId, overrideConfig }, _extra) => {
-    try {
-      const response = await flowiseClient.createPrediction({
-        chatflowId,
-        question,
-        uploads,
-        chatId,
-        overrideConfig,
-        streaming: false,
-      });
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error running chatflow: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
+  async (params) => handleCreatePredictionWithFiles(flowiseClient, params)
 );
 
 // Tool: Create Prediction with Lead Email
@@ -223,38 +121,7 @@ server.tool(
       .optional()
       .describe("Optional configuration overrides for the chatflow"),
   },
-  async ({ chatflowId, question, leadEmail, chatId, overrideConfig }, _extra) => {
-    try {
-      const response = await flowiseClient.createPrediction({
-        chatflowId,
-        question,
-        leadEmail,
-        chatId,
-        overrideConfig,
-        streaming: false,
-      });
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error running chatflow: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
+  async (params) => handleCreatePredictionWithLead(flowiseClient, params)
 );
 
 // Tool: List Chatflows
@@ -262,30 +129,7 @@ server.tool(
   "list_chatflows",
   "List all chatflows available in Flowise. Returns chatflow IDs, names, and metadata.",
   {},
-  async (_params, _extra) => {
-    try {
-      const chatflows = await flowiseApi("GET", "/chatflows");
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(chatflows, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error listing chatflows: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
+  async () => handleListChatflows(flowiseApi)
 );
 
 // Tool: Get Chatflow
@@ -295,30 +139,7 @@ server.tool(
   {
     chatflowId: z.string().describe("The ID of the chatflow to retrieve"),
   },
-  async ({ chatflowId }, _extra) => {
-    try {
-      const chatflow = await flowiseApi("GET", `/chatflows/${chatflowId}`);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(chatflow, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error getting chatflow: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
+  async ({ chatflowId }) => handleGetChatflow(flowiseApi, chatflowId)
 );
 
 // Tool: Create Chatflow
@@ -343,35 +164,7 @@ server.tool(
       .optional()
       .describe("Optional chatbot configuration"),
   },
-  async ({ name, flowData, type, chatbotConfig }, _extra) => {
-    try {
-      const chatflow = await flowiseApi("POST", "/chatflows", {
-        name,
-        flowData: JSON.stringify(flowData),
-        type: type || "CHATFLOW",
-        chatbotConfig: chatbotConfig ? JSON.stringify(chatbotConfig) : undefined,
-      });
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(chatflow, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error creating chatflow: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
+  async (params) => handleCreateChatflow(flowiseApi, params)
 );
 
 // Tool: Update Chatflow
@@ -393,35 +186,7 @@ server.tool(
       .optional()
       .describe("Updated chatbot configuration"),
   },
-  async ({ chatflowId, name, flowData, chatbotConfig }, _extra) => {
-    try {
-      const updateData: Record<string, unknown> = {};
-      if (name) updateData.name = name;
-      if (flowData) updateData.flowData = JSON.stringify(flowData);
-      if (chatbotConfig) updateData.chatbotConfig = JSON.stringify(chatbotConfig);
-
-      const chatflow = await flowiseApi("PUT", `/chatflows/${chatflowId}`, updateData);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(chatflow, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error updating chatflow: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
+  async (params) => handleUpdateChatflow(flowiseApi, params)
 );
 
 // Tool: Delete Chatflow
@@ -431,30 +196,7 @@ server.tool(
   {
     chatflowId: z.string().describe("The ID of the chatflow to delete"),
   },
-  async ({ chatflowId }, _extra) => {
-    try {
-      const result = await flowiseApi("DELETE", `/chatflows/${chatflowId}`);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify({ success: true, deleted: chatflowId, result }, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error deleting chatflow: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
+  async ({ chatflowId }) => handleDeleteChatflow(flowiseApi, chatflowId)
 );
 
 // Tool: List Nodes
@@ -462,30 +204,7 @@ server.tool(
   "list_nodes",
   "List all available node types in Flowise that can be used to build chatflows.",
   {},
-  async (_params, _extra) => {
-    try {
-      const nodes = await flowiseApi("GET", "/nodes");
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(nodes, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error listing nodes: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
+  async () => handleListNodes(flowiseApi)
 );
 
 // Tool: Get Nodes by Category
@@ -495,30 +214,7 @@ server.tool(
   {
     category: z.string().describe("The category name (e.g., 'Chat Models', 'Agents', 'Memory', 'Chains', 'Tools')"),
   },
-  async ({ category }, _extra) => {
-    try {
-      const nodes = await flowiseApi("GET", `/nodes/category/${encodeURIComponent(category)}`);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(nodes, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error getting nodes by category: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
+  async ({ category }) => handleGetNodesByCategory(flowiseApi, category)
 );
 
 // Tool: Get Node by Name
@@ -528,30 +224,7 @@ server.tool(
   {
     nodeName: z.string().describe("The name of the node (e.g., 'chatOpenAI', 'conversationalAgent')"),
   },
-  async ({ nodeName }, _extra) => {
-    try {
-      const node = await flowiseApi("GET", `/nodes/${encodeURIComponent(nodeName)}`);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(node, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error getting node: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
+  async ({ nodeName }) => handleGetNode(flowiseApi, nodeName)
 );
 
 // Start the server

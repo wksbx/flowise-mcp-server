@@ -19,8 +19,8 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that p
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/flowise-mcp.git
-cd flowise-mcp
+git clone https://github.com/wksbx/flowise-mcp-server.git
+cd flowise-mcp-server
 
 # Install dependencies
 pnpm install
@@ -76,7 +76,7 @@ Add to your MCP client configuration (e.g., Claude Desktop, Claude Code):
   "mcpServers": {
     "flowise": {
       "command": "node",
-      "args": ["/path/to/flowise-mcp/dist/index.js"],
+      "args": ["/path/to/flowise-mcp-server/dist/index.js"],
       "env": {
         "FLOWISE_BASE_URL": "http://localhost:3000",
         "FLOWISE_API_KEY": "your-api-key-here"
@@ -97,7 +97,7 @@ Add to your MCP client configuration (e.g., Claude Desktop, Claude Code):
         "run", "-i", "--rm",
         "--add-host=host.docker.internal:host-gateway",
         "--env-file", "/path/to/your/.env",
-        "flowise-mcp"
+        "flowise-mcp-server"
       ]
     }
   }
@@ -163,19 +163,44 @@ pnpm build
 pnpm dev
 ```
 
+## Testing
+
+The project includes comprehensive unit tests using [Vitest](https://vitest.dev/).
+
+```bash
+# Run tests once
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Run tests with coverage report
+pnpm test:coverage
+```
+
+### Test Structure
+
+```
+src/
+├── flowise-api.test.ts   # API client tests (8 tests)
+└── handlers.test.ts      # Tool handler tests (26 tests)
+```
+
 ## Project Structure
 
 ```
-flowise-mcp/
+flowise-mcp-server/
 ├── src/
-│   └── index.ts          # Main MCP server implementation
+│   ├── index.ts           # MCP server entry point
+│   ├── flowise-api.ts     # Flowise API client
+│   ├── handlers.ts        # Tool handler functions
+│   └── *.test.ts          # Unit tests
 ├── dist/                  # Compiled JavaScript (generated)
-├── .claude/
-│   └── skills/           # Claude Code skill documentation
 ├── package.json
 ├── tsconfig.json
+├── vitest.config.ts       # Test configuration
 ├── Dockerfile
-├── .env.example          # Environment template
+├── .env.example           # Environment template
 └── mcp-config.example.json
 ```
 

@@ -9,7 +9,7 @@
         "--add-host=host.docker.internal:host-gateway",
         "--env-file",
         "/path/to/your/.env",
-        "flowise-mcp"
+        "flowise-mcp-server"
       ]
     }
   }
